@@ -23,25 +23,27 @@ export default function Page() {
     const [testsGivenSize, setTestsGivenSize] = useState<number | null>(null)
     const [typeResult, setTypeResult] = useState<TypeScoreType[]>([])
     const { data: session, status } = useSession()
+    const targetUser = Array.isArray(userName) ? userName[0] : userName
 
     useEffect(() => {
+        if (!router.isReady) return;
         const fetchResultScore = async () => {
             if (!session) return null
             if (!session?.user.userHandle) return null
             try {
-                const response = await fetch(`${GLOBALS.baseURL}/api/get-results`, {
+                const response = await fetch(`/api/get-results`, {
                     method: 'POST',
                     body: JSON.stringify({ userHandle: session?.user.userHandle })
                 })
                 const data = await response.json()
                 if (!data) {
-                    setTestsForMeSize(null)
-                    setTestsGivenSize(null)
+                    setTestsForMeSize(0)
+                    setTestsGivenSize(0)
                     return
                 }
                 if (!data.data) {
-                    setTestsForMeSize(null)
-                    setTestsGivenSize(null)
+                    setTestsForMeSize(0)
+                    setTestsGivenSize(0)
                     return
                 }
                 const results: TypeScoreType[] = data.data.result
@@ -54,13 +56,16 @@ export default function Page() {
                     console.log("Some error let's go")
                 }
             } catch (e) {
-
+                setTestsForMeSize(0)
+                setTestsGivenSize(0)
+                setTypeResult([])
             }
         }
 
         fetchResultScore()
+        console.log(status)
 
-    }, [GLOBALS.baseURL, session, session?.user.userHandle])
+    }, [router.isReady, GLOBALS.baseURL, session, session?.user.userHandle])
 
 
     if (status === "loading") {
@@ -71,9 +76,16 @@ export default function Page() {
         signIn("google", {
             callbackUrl: `/${router.query.user}` || ""
         })
+        return <Loading />
     }
 
-    if (session?.user.userHandle != userName) {
+    // If authenticated but missing handle, send them to handle setup
+    if (session && !session.user.userHandle) {
+        router.replace(`/auth/get-handle?callbackUrl=${encodeURIComponent(`/${targetUser || ''}`)}`)
+        return <Loading />
+    }
+
+    if (session?.user.userHandle != targetUser) {
         return <AccessDenied />
     }
 
@@ -82,7 +94,6 @@ export default function Page() {
     }
 
 
-    if (testsForMeSize < REQUIRED_TEST_FOR_ME || testsGivenSize < REQUIRED_TEST_FOR_OTHERS) {
         return (
             <Skeleton showNavbar={true} noContainer={false} maxWidth={"lg"}>
                 <div className={"flex flex-col items-center mt-12"}>
@@ -109,47 +120,6 @@ export default function Page() {
                 </div>
             </Skeleton>
         )
-    }
-
-    if (!typeResult) {
-        return <Loading />
-    }
-
-    const typeResultIsValid = (typeResult: TypeScoreType[]) => {
-        for (let i = 0; i < typeResult.length; i++) {
-            if (typeResult[i].score !== 0) {
-                return true
-            }
-        }
-        return false
-    }
-
-    return (
-        <Skeleton showNavbar={true} noContainer={false} maxWidth={"lg"}>
-            {
-                typeResultIsValid(typeResult) ?
-                    <div className={"flex flex-col items-center mt-12"}>
-                        <NumberTestCard userName={userName as string} testsForMeSize={testsForMeSize} testsGivenSize={testsGivenSize} />
-                        <TextEdgy className={"text-accent text-2xl mt-8"}>RESULT:</TextEdgy>
-                        <div className={"mt-2 w-full"}>
-                            <DisplayTopKResult topK={NUMBER_OF_RESULT_SHOWN} typeResult={typeResult} />
-                        </div>
-                        <div className="flex justify-center my-8">
-                            <a
-                                href="https://forms.gle/SXyTgPXRwQcALYGo7"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn btn-outline btn-accent"
-                            >
-                                <TextEdgy>Give Feedback</TextEdgy>
-                            </a>
-                        </div>
-                    </div>
-                    :
-                    <Loading />
-            }
-        </Skeleton>
-    )
 }
 
 

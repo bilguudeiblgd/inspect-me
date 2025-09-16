@@ -16,5 +16,8 @@ const testSchema = new Schema<TestTypeDb>({
     group: {type: Schema.Types.String, required: false, default: 'default'}
 }, {timestamps: true});
 
+// Ensure uniqueness per (testReceiver, testGiver, group)
+testSchema.index({ testReceiver: 1, testGiver: 1, group: 1 }, { unique: true });
+
 // had to follow naming conventions of next-auth db adapter
 export default mongoose.models.tests || mongoose.model<TestTypeDb>('tests', testSchema);

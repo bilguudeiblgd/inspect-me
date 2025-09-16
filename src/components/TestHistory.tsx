@@ -59,17 +59,21 @@ const Pagination: React.FC<PaginationProps> = ({ page, totalPages, setPage }) =>
 
 const TestList: React.FC<TestListProps> = ({ tests, direction, page, setPage }) => {
     const router = useRouter();
-    const totalPages = Math.ceil((tests?.length || 0) / PAGE_SIZE);
-    const paginated = tests.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const list = Array.isArray(tests) ? tests : [];
+    const totalPages = Math.ceil((list.length || 0) / PAGE_SIZE);
+    const paginated = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     console.log(`tests ${direction}: `, tests)
     const getTestUrl = (test: TestWithUser) => {
-        return `/tests?giver=${test.testGiver?.userHandle}&receiver=${test.testReceiver?.userHandle}`;
+        const giver = test.testGiver?.userHandle || '';
+        const receiver = test.testReceiver?.userHandle || '';
+        const group = test.group || 'default';
+        return `/tests?giver=${encodeURIComponent(giver)}&receiver=${encodeURIComponent(receiver)}&group=${encodeURIComponent(group)}`;
     }
 
     return (
         <div className="space-y-4">
-            {!tests || tests.length === 0 ? (
+            {!list || list.length === 0 ? (
                 <Text className="text-gray-500 text-center">No tests {direction === 'given' ? 'given' : 'received'} yet</Text>
             ) : (
                 <>
@@ -86,16 +90,19 @@ const TestList: React.FC<TestListProps> = ({ tests, direction, page, setPage }) 
                                     <TextEdgy className="text-lg text-accent font-bold mb-1">
                                         {label}: <span className="text-secondary text-xl font-extrabold underline underline-offset-4">{user?.userHandle || 'Unknown'}</span>
                                     </TextEdgy>
+                                    {test.group === 'mbti' && (
+                                        <span className="inline-block text-xs font-bold uppercase bg-secondary text-white px-2 py-1 rounded-md mr-2 mt-1">MBTI</span>
+                                    )}
                                     <Text className="text-sm text-gray-400 mt-1">
                                         {new Date(test.createdAt).toLocaleDateString()}
                                     </Text>
                                 </div>
-                                <button
-                                    onClick={() => router.push(testUrl)}
+                                <a
+                                    href={testUrl}
                                     className="btn btn-accent btn-outline font-edgy px-6 py-2 text-lg shadow group-hover:scale-105 transition-transform duration-200"
                                 >
                                     <TextEdgy className="text-lg">View Results</TextEdgy>
-                                </button>
+                                </a>
                             </div>
                         );
                     })}

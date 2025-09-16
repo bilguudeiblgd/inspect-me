@@ -28,7 +28,10 @@ export const processDuoDescription = (giverTopType: TYPES | null, receiverTopTyp
 
 export default function Page() {
     const router = useRouter();
-    const { giver, receiver } = router.query;
+    const { giver, receiver, group } = router.query;
+    const giverHandle = typeof giver === 'string' ? giver : Array.isArray(giver) ? giver[0] : undefined;
+    const receiverHandle = typeof receiver === 'string' ? receiver : Array.isArray(receiver) ? receiver[0] : undefined;
+    const groupParam = typeof group === 'string' ? group : Array.isArray(group) ? group[0] : undefined;
     const [testData, setTestData] = useState<TestTypeDb | null>(null);
     const [loading, setLoading] = useState(true);
     const [giverTopType, setGiverTopType] = useState<TYPES | null>(null);
@@ -40,12 +43,13 @@ export default function Page() {
     useEffect(() => {
         const fetchTest = async () => {
             try {
-                const response = await fetch(`/api/test?giver=${giver}&receiver=${receiver}`);
+                const isMbti = groupParam === 'mbti';
+                const response = await fetch(`${isMbti ? '/api/mbti' : '/api/test'}?giver=${encodeURIComponent(giverHandle as string)}&receiver=${encodeURIComponent(receiverHandle as string)}`);
                 const data = await response.json();
                 setTestData(data.data);
 
                 // Get giver's top type from their user data
-                if (data.data?.testGiver) {
+                if (data.data?.testGiver && data.data?.group !== 'mbti') {
                     // First get the user data using the ObjectId
                     const giverResponse = await fetch(`/api/user/by-id/${data.data.testGiver}`);
                     const giverData = await giverResponse.json();
@@ -58,7 +62,7 @@ export default function Page() {
                 }
 
                 // Get receiver's top type from test data
-                if (data.data?.info) {
+                if (data.data?.info && data.data?.group !== 'mbti') {
                     const sortedInfo = [...data.data.info].sort((a, b) => b.score - a.score);
                     if (sortedInfo[0].score > 0) {
                         setReceiverTopType(sortedInfo[0].personality_type as TYPES);
@@ -70,18 +74,52 @@ export default function Page() {
                 setLoading(false);
             }
         }
-        if (giver && receiver) {
+        if (giverHandle && receiverHandle) {
             fetchTest();
         }
-    }, [giver, receiver]);
+    }, [giverHandle, receiverHandle, groupParam]);
 
-    if (session?.user.userHandle !== giver && session?.user.userHandle !== receiver) {
+    if (giverHandle && receiverHandle && session?.user.userHandle !== giverHandle && session?.user.userHandle !== receiverHandle) {
         return <AccessDenied />
     }
 
 
     const renderTopTypes = (info: TypeScoreType[]) => {
         const topThree = info.slice(0, 3);
+        const isMbti = (groupParam === 'mbti') || testData?.group === 'mbti';
+        if (isMbti) {
+            return (
+                <div className="flex flex-col gap-4">
+                    {topThree.map((type, index) => (
+                        <div
+                            key={`${type.personality_type}-${index}`}
+                            className="p-4 rounded-3xl shadow-lg"
+                            style={{ backgroundColor: CARD_COLORS[index] }}
+                        >
+                            <div className="flex flex-row justify-between">
+                                <TextEdgy className="text-2xl font-bold">
+                                    {index + 1}. {type.personality_type}
+                                </TextEdgy>
+                            </div>
+                            <div className="mt-2">
+                                <div className="w-full bg-white/30 rounded-full h-2.5">
+                                    <div
+                                        className="h-2.5 rounded-full"
+                                        style={{
+                                            width: `${(type.score / topThree[0].score) * 100}%`,
+                                            backgroundColor: TYPE_COLORS[index]
+                                        }}
+                                    ></div>
+                                </div>
+                                <TextEdgy className="text-sm mt-1 font-semibold">
+                                    Score: {type.score.toFixed(2)}
+                                </TextEdgy>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        }
         return (
             <div className="flex flex-col gap-4">
                 {topThree.map((type, index) => (
@@ -148,6 +186,7 @@ export default function Page() {
                                 </div>
                             )
                         }
+                        {((typeof group === 'string' && group !== 'mbti') || testData?.group !== 'mbti') && (
                         <div className="mt-20 card bg-accent/20 border-accent border-2 shadow-lg p-4">
                             <TextEdgy className="text-lg text-accent text-center">
                                 Duo Description
@@ -181,6 +220,7 @@ export default function Page() {
                             </TextEdgy>
 
                         </div>
+                        )}
 
                     </div>
                 ) : (

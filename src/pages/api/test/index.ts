@@ -21,7 +21,7 @@ export default async function handler(
     }
 
     try {
-        const { receiver, giver } = req.query;
+        const { receiver, giver, group } = req.query;
 
         if(!receiver || !giver) {
             return res.status(400).json({data: null, message: "Missing required fields"});
@@ -34,7 +34,11 @@ export default async function handler(
             return res.status(404).json({data: null, message: "Test receiver or giver not found"});
         }
 
-        const test = await Test.findOne<TestTypeDb>({testReceiver: testReceiverObject, testGiver: testGiverObject});
+        const query : any = {testReceiver: testReceiverObject, testGiver: testGiverObject};
+        if (group && typeof group === 'string') {
+            query.group = group;
+        }
+        const test = await Test.findOne<TestTypeDb>(query);
 
         if(test) {
             return res.status(200).json({data: test, message: "successful"});
