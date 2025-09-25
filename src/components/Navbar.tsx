@@ -3,6 +3,7 @@ import { signIn, signOut, useSession } from "next-auth/react"
 
 import Link from 'next/link';
 import Image from "next/image";
+import Avatar from "@/components/Avatar";
 import Logo from "@/components/Logo";
 
 const Navbar: React.FC = () => {
@@ -22,24 +23,18 @@ const Navbar: React.FC = () => {
                         (
                             <div className="dropdown dropdown-end">
                                 <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
-                                    <div className="w-10 rounded-full">
-                                        <Image
-                                            alt="User avatar"
-                                            src={session.user?.image || defaultImage}
-                                            width={96}
-                                            height={96}
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.src = defaultImage;
-                                            }}
-                                        />
-                                    </div>
+                                    <Avatar
+                                        userHandle={session.user?.userHandle}
+                                        name={session.user?.name}
+                                        imageUrl={session.user?.image || null}
+                                        size={40}
+                                    />
                                 </div>
                                 <ul
                                     tabIndex={0}
                                     className="menu menu-sm bg-secondary dropdown-content bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
                                     <li>
-                                        <Link href={`/${session.user?.userHandle}`} className="justify-between">
+                                        <Link href={session.user?.userHandle ? `/${session.user.userHandle}` : `/auth/get-handle?callbackUrl=${encodeURIComponent('/')}`} className="justify-between">
                                             <b>Profile</b>
                                         </Link>
                                     </li>

@@ -5,6 +5,8 @@ import {TestTypeDb, TYPES} from "@/components/Test/Properties";
 export interface DbUser extends IUser {
     tests_for_me: [TestTypeDb],
     tests_given: [TestTypeDb]
+    mbti_tests_for_me?: any[],
+    mbti_tests_given?: any[],
     results?: {
         personality_type: string,
         score: number,
@@ -49,6 +51,8 @@ const userSchema = new mongoose.Schema({
     emailVerified: String,
     tests_for_me: [{type: mongoose.SchemaTypes.ObjectId, ref: "tests"}],
     tests_given: [{type: mongoose.SchemaTypes.ObjectId, ref: "tests"}],
+    mbti_tests_for_me: [{type: mongoose.SchemaTypes.ObjectId, ref: "mbtitests"}],
+    mbti_tests_given: [{type: mongoose.SchemaTypes.ObjectId, ref: "mbtitests"}],
     results: {
         type: [{
             personality_type: {

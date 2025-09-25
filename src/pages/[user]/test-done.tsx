@@ -62,7 +62,6 @@ const TestDonePage: React.FC = () => {
         const testGiver = session.user.userHandle;
         const testReceiver = testObject.testReceiver;
 
-        // 1. Prevent self-test
         if (testGiver === testReceiver) {
             setError("You can't give a test to yourself.");
             return;
@@ -80,8 +79,11 @@ const TestDonePage: React.FC = () => {
 
         const sendTest = async () => {
             try {
-                const response = await fetch('/api/test/send', {
+                const isMbti = testObject.group === 'mbti';
+                const endpoint = isMbti ? '/api/mbti/send' : '/api/test/send';
+                const response = await fetch(endpoint, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(testObject),
                 });
                 const result = await response.json();
@@ -94,6 +96,16 @@ const TestDonePage: React.FC = () => {
 
         sendTest();
     }, [testObject, error, session?.user?.userHandle]);
+
+    // For MBTI: as soon as the test is submitted, go straight to /tests results
+    useEffect(() => {
+        if (!testSendResolved || !testObject) return;
+        const isMbti = testObject.group === 'mbti';
+        if (isMbti && testObject.testGiver && testObject.testReceiver) {
+            const url = `/tests?giver=${encodeURIComponent(testObject.testGiver)}&receiver=${encodeURIComponent(testObject.testReceiver)}&group=mbti`;
+            router.replace(url);
+        }
+    }, [testSendResolved, testObject, router]);
 
     if (error) {
         return (
@@ -126,20 +138,26 @@ const TestDonePage: React.FC = () => {
                     <DisplayTopKResult topK={NUMBER_OF_RESULT_SHOWN} typeResult={testObject.info} />
                 </div>
 
-                <div className="flex flex-col items-center">
-                    <TextEdgy className={"text-lg mt-8 font-bold text-center text-secondary"}>
-                        Your match with <span className="text-accent">{testObject.testReceiver}</span>:
-                    </TextEdgy>
-                    <a
-                        target="_blank"
-                        className={`btn btn-secondary mt-4${!testSendResolved ? ' pointer-events-none opacity-50' : ''}`}
-                        href={`/tests?giver=${testObject.testGiver}&receiver=${testObject.testReceiver}`}
-                        tabIndex={testSendResolved ? 0 : -1}
-                        aria-disabled={!testSendResolved}
-                    >
-                        <TextEdgy className={"text-white font-bold"}>View Duo</TextEdgy>
-                    </a>
-                </div>
+                {testObject.group === 'mbti' ? (
+                    <div className="flex flex-col items-center mt-6">
+                        <TextEdgy className="text-primary">Redirecting to results...</TextEdgy>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center">
+                        <TextEdgy className={"text-lg mt-8 font-bold text-center text-secondary"}>
+                            Your match with <span className="text-accent">{testObject.testReceiver}</span>:
+                        </TextEdgy>
+                        <a
+                            target="_blank"
+                            className={`btn btn-secondary mt-4${!testSendResolved ? ' pointer-events-none opacity-50' : ''}`}
+                            href={`/tests?giver=${testObject.testGiver}&receiver=${testObject.testReceiver}&group=${encodeURIComponent(testObject.group || 'mbti')}`}
+                            tabIndex={testSendResolved ? 0 : -1}
+                            aria-disabled={!testSendResolved}
+                        >
+                            <TextEdgy className={"text-white font-bold"}>View Duo</TextEdgy>
+                        </a>
+                    </div>
+                )}
                 <HomeButton />
             </div>
         </Skeleton>

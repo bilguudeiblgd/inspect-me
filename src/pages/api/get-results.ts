@@ -22,11 +22,15 @@ export default async function handler(
         const user = await User.findOne(query);
         if(!user)
             return res.status(500).json({ data: null });
+        const testsForMeCount = (Array.isArray((user as any).tests_for_me) ? (user as any).tests_for_me.length : 0)
+            + (Array.isArray((user as any).mbti_tests_for_me) ? (user as any).mbti_tests_for_me.length : 0);
+        const testsGivenCount = (Array.isArray((user as any).tests_given) ? (user as any).tests_given.length : 0)
+            + (Array.isArray((user as any).mbti_tests_given) ? (user as any).mbti_tests_given.length : 0);
         return res.status(200).json({
             data: {
                 result: user.results,
-                tests_for_me_size: user.tests_for_me.length,
-                tests_given_size: user.tests_given.length,
+                tests_for_me_size: testsForMeCount,
+                tests_given_size: testsGivenCount,
             }
         });
     } catch(e) {

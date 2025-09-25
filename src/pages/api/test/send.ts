@@ -23,7 +23,8 @@ export default async function handler(
     }
 
     try {
-        const { testReceiver, testGiver, info, group } = JSON.parse(req.body);
+        const parsedBody = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+        const { testReceiver, testGiver, info, group } = parsedBody;
         // Check if the necessary fields are present
         if (!info || !testReceiver || !testGiver) {
             return res.status(400).json({ status: "error", message: "Missing required fields" });
@@ -42,8 +43,8 @@ export default async function handler(
             return res.status(404).json({ status: "error", message: "Test giver not found" });
         }
 
-        // Check if a test already exists with the same giver and receiver
-        const existingTest = await Test.findOne({ testReceiver: receiverUser._id, testGiver: giverUser._id });
+        // Check if a test already exists with the same giver, receiver, and group
+        const existingTest = await Test.findOne({ testReceiver: receiverUser._id, testGiver: giverUser._id, group: group });
         if (existingTest) {
             return res.status(409).json({ status: "error", message: "A test between these users already exists." });
         }
@@ -62,7 +63,10 @@ export default async function handler(
         giverUser.tests_given.push(newTest)
         receiverUser.tests_for_me.push(newTest)
 
-        updateResultScores(receiverUser, newTest)
+        // Only update aggregate user results for non-MBTI tests
+        if (group !== 'mbti') {
+            updateResultScores(receiverUser, newTest)
+        }
         await giverUser.save();
         await receiverUser.save();
 

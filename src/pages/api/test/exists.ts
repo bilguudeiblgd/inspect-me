@@ -24,8 +24,8 @@ export default async function handler(
         // Connect to the database
          await mongooseConnect();
         console.log("req.body", req.body);
-        const {testReceiver, testGiver} = JSON.parse(req.body);
-        console.log("test rec and giv:", testReceiver, testGiver);
+        const {testReceiver, testGiver, group} = JSON.parse(req.body);
+        console.log("test rec and giv and group:", testReceiver, testGiver, group);
         // Check if the necessary fields are present
         if (!testReceiver || !testGiver) {
             return res.status(400).json({data: null, message: "Missing required fields"});
@@ -44,7 +44,11 @@ export default async function handler(
             return res.status(404).json({data: null, message: "Test giver not found"});
         }
 
-        const test = await Test.findOne<TestTypeDb>({testReceiver: receiverUserObject, testGiver: giverUserObject})
+        const query : any = {testReceiver: receiverUserObject, testGiver: giverUserObject};
+        if (group) {
+            query.group = group;
+        }
+        const test = await Test.findOne<TestTypeDb>(query)
 
         if (!test) {
             return res.status(200).json({data: null, message: "Test doesn't exist"});
