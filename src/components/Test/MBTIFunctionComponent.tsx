@@ -36,7 +36,7 @@ const MBTIFunctionComponent: React.FC<Props> = ({ handleContinueButton, testInfo
                     Their top 3 traits:
                 </TextEdgy>
                 <TextEdgy className="text-accent text-sm">
-                    Drag and drop to rank {testReceiver}'s top 3 traits (most relevant at top)
+                    Drag and drop to rank {testReceiver}{"'"}s top 3 traits (most relevant at top)
                 </TextEdgy>
             </div>
 
